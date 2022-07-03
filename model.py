@@ -19,7 +19,7 @@ class Embeddings(nn.Module):
         super().__init__()
 
         self.pos_encoder = positional_encoders.get(configs.get('encoder', 'interval'), IntervalEncoding)(configs)
-        #IntervalEncoding(configs) if configs.encoder == 'interval' else PositionalEncoding(configs)
+        # IntervalEncoding(configs) if configs.encoder == 'interval' else PositionalEncoding(configs)
 
     def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
         x = self.pos_encoder(input_ids)
@@ -244,11 +244,15 @@ class ModelForFM(pl.LightningModule):
         self.mae = MaskedMAELoss(reduction=configs.get('reduction_strategy', 'sum'))
         self.mdl = MaskedDirectionLoss(reduction=configs.get('reduction_strategy', 'sum'))
 
-        self.data_processor = DataProcessor(configs.dataset_path)
+        self.data_processor = DataProcessor(configs)
         self.metrics = configs.get('metrics', [])
 
         if configs.get('weights_path', None) is not None:
             self.load_weights(configs['weights_path'])
+
+        self.train_loader = None
+        self.val_loader = None
+        self.test_loader = None
 
     def forward(self, **params):
         device_params = {k: v.to(self.model_device) if v is not None else v for k, v in params.items()}
@@ -276,13 +280,16 @@ class ModelForFM(pl.LightningModule):
         # print(pooler_output, pooler_output.shape)
 
         loss = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        loss_mean = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
+        loss_mean = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
+                                   reduction='mean')
 
         rmse_loss = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
+        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
+                                   reduction='mean')
 
         mae_loss = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        mae_loss_mean = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
+        mae_loss_mean = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
+                                 reduction='mean')
 
         mdl_loss, mdl_f1 = self.mdl(pooler_output.detach(), labels.to(self.model_device), mask.to(self.model_device),
                                     return_f1=True)
@@ -299,13 +306,16 @@ class ModelForFM(pl.LightningModule):
         pooler_output = outputs[1]
 
         loss = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        loss_mean = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
+        loss_mean = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
+                                   reduction='mean')
 
         rmse_loss = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
+        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
+                                   reduction='mean')
 
         mae_loss = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        mae_loss_mean = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
+        mae_loss_mean = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
+                                 reduction='mean')
 
         mdl_loss, mdl_f1 = self.mdl(pooler_output.detach(), labels.to(self.model_device), mask.to(self.model_device),
                                     return_f1=True)
@@ -331,13 +341,16 @@ class ModelForFM(pl.LightningModule):
         pooler_output = outputs[1]
 
         loss = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        loss_mean = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
+        loss_mean = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
+                                   reduction='mean')
 
         rmse_loss = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
+        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
+                                   reduction='mean')
 
         mae_loss = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        mae_loss_mean = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
+        mae_loss_mean = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
+                                 reduction='mean')
 
         mdl_loss, mdl_f1 = self.mdl(pooler_output.detach(), labels.to(self.model_device), mask.to(self.model_device),
                                     return_f1=True)
@@ -369,12 +382,18 @@ class ModelForFM(pl.LightningModule):
     def test_dataloader(self) -> DataLoader:
         return self.test_loader
 
-    def load_dataset(self) -> bool:
-        dataset = self.data_processor.prepare_dataset(self.configs.train_set_prop, self.configs.val_set_prop,
-                                                      self.configs.test_set_prop, self.configs.batch_size)
-        self.train_loader, self.val_loader, self.test_loader = dataset
+    def load_dataset(self, dataset_path: str = None) -> tuple:
+        dataset_path = dataset_path if dataset_path is not None else self.configs.dataset_path
 
-        return self.train_loader is not None and self.val_loader is not None
+        dataset = self.data_processor.prepare_dataset(dataset_path, self.configs.train_set_prop,
+                                                      self.configs.val_set_prop, self.configs.test_set_prop,
+                                                      self.configs.batch_size)
+
+        self.train_loader = dataset[0] if dataset[0] is not None else self.train_loader
+        self.val_loader = dataset[1] if dataset[1] is not None else self.val_loader
+        self.test_loader = dataset[2] if dataset[2] is not None else self.test_loader
+
+        return self.train_loader is not None, self.val_loader is not None, self.test_loader is not None
 
     def aggregate_metrics(self, outputs, stage='val'):
         avg_loss = torch.stack([x[stage + '_loss'] for x in outputs]).mean()
