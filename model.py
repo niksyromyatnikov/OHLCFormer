@@ -236,9 +236,9 @@ class ModelForFM(pl.LightningModule):
 
         self.configs = configs
 
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.model_device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        self.net = Model(configs, self.device)
+        self.net = Model(configs, self.model_device)
 
         self.criterion = MaskedMSELoss(reduction=configs.get('reduction_strategy', 'sum'))
 
@@ -253,7 +253,7 @@ class ModelForFM(pl.LightningModule):
         self.metrics = configs.get('metrics', [])
 
     def forward(self, **params):
-        device_params = {k: v.to(self.device) if v is not None else v for k, v in params.items()}
+        device_params = {k: v.to(self.model_device) if v is not None else v for k, v in params.items()}
 
         outputs = self.net(**device_params)
 
@@ -261,10 +261,10 @@ class ModelForFM(pl.LightningModule):
 
     def mask_input(self, inputs, mask):
         # masking input
-        mask = torch.ones(inputs.shape[0], inputs.shape[1]).to(self.device)
+        mask = torch.ones(inputs.shape[0], inputs.shape[1]).to(self.model_device)
         mask[inputs == 0] = 0
 
-        data[mask == 0] = torch.Tensor([0, 0, 0, 0])
+        inputs[mask == 0] = torch.Tensor([0, 0, 0, 0])
 
         return mask
 
@@ -277,16 +277,16 @@ class ModelForFM(pl.LightningModule):
 
         # print(pooler_output, pooler_output.shape)
 
-        loss = self.criterion(pooler_output, labels.to(self.device), mask.to(self.device))
-        loss_mean = self.criterion(pooler_output, labels.to(self.device), mask.to(self.device), reduction='mean')
+        loss = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
+        loss_mean = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
 
-        rmse_loss = self.rmse(pooler_output, labels.to(self.device), mask.to(self.device))
-        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.device), mask.to(self.device), reduction='mean')
+        rmse_loss = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
+        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
 
-        mae_loss = self.mae(pooler_output, labels.to(self.device), mask.to(self.device))
-        mae_loss_mean = self.mae(pooler_output, labels.to(self.device), mask.to(self.device), reduction='mean')
+        mae_loss = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
+        mae_loss_mean = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
 
-        mdl_loss, mdl_f1 = self.mdl(pooler_output.detach(), labels.to(self.device), mask.to(self.device),
+        mdl_loss, mdl_f1 = self.mdl(pooler_output.detach(), labels.to(self.model_device), mask.to(self.model_device),
                                     return_f1=True)
 
         return {'loss': loss, 'loss_mean': loss_mean, 'rmse_loss': rmse_loss, 'rmse_loss_mean': rmse_loss_mean,
@@ -300,28 +300,30 @@ class ModelForFM(pl.LightningModule):
 
         pooler_output = outputs[1]
 
-        loss = self.criterion(pooler_output, labels.to(self.device), mask.to(self.device))
-        loss_mean = self.criterion(pooler_output, labels.to(self.device), mask.to(self.device), reduction='mean')
+        loss = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
+        loss_mean = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
 
-        rmse_loss = self.rmse(pooler_output, labels.to(self.device), mask.to(self.device))
-        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.device), mask.to(self.device), reduction='mean')
+        rmse_loss = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
+        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
 
-        mae_loss = self.mae(pooler_output, labels.to(self.device), mask.to(self.device))
-        mae_loss_mean = self.mae(pooler_output, labels.to(self.device), mask.to(self.device), reduction='mean')
+        mae_loss = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
+        mae_loss_mean = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
 
-        mdl_loss, mdl_f1 = self.mdl(pooler_output.detach(), labels.to(self.device), mask.to(self.device),
+        mdl_loss, mdl_f1 = self.mdl(pooler_output.detach(), labels.to(self.model_device), mask.to(self.model_device),
                                     return_f1=True)
 
         return {'val_loss': loss, 'val_loss_mean': loss_mean, 'val_rmse_loss': rmse_loss,
                 'val_rmse_loss_mean': rmse_loss_mean, 'val_mae_loss': mae_loss, 'val_mae_loss_mean': mae_loss_mean,
                 'val_mask_direction_loss': mdl_loss, 'val_mask_direction_f1': mdl_f1}
 
-    def validation_end(self, outputs) -> dict:
+    def validation_epoch_end(self, outputs):
         avg_loss, avg_metrics = self.aggregate_metrics(outputs, stage='val')
 
-        tensorboard_logs = {**{'val_loss': avg_loss}, **avg_metrics}
+        tensorboard_logs = {**{'avg_val_loss': avg_loss}, **avg_metrics}
 
-        return {'avg_val_loss': avg_loss, 'progress_bar': tensorboard_logs}
+        self.log_dict(tensorboard_logs, prog_bar=True)
+
+        # return {'avg_val_loss': avg_loss, 'progress_bar': tensorboard_logs}
 
     def test_step(self, batch, batch_nb) -> dict:
         input_ids, attention_mask, mask, labels = batch[:4]
@@ -330,43 +332,42 @@ class ModelForFM(pl.LightningModule):
 
         pooler_output = outputs[1]
 
-        loss = self.criterion(pooler_output, labels.to(self.device), mask.to(self.device))
-        loss_mean = self.criterion(pooler_output, labels.to(self.device), mask.to(self.device), reduction='mean')
+        loss = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
+        loss_mean = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
 
-        rmse_loss = self.rmse(pooler_output, labels.to(self.device), mask.to(self.device))
-        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.device), mask.to(self.device), reduction='mean')
+        rmse_loss = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
+        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
 
-        mae_loss = self.mae(pooler_output, labels.to(self.device), mask.to(self.device))
-        mae_loss_mean = self.mae(pooler_output, labels.to(self.device), mask.to(self.device), reduction='mean')
+        mae_loss = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
+        mae_loss_mean = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device), reduction='mean')
 
-        mdl_loss, mdl_f1 = self.mdl(pooler_output.detach(), labels.to(self.device), mask.to(self.device),
+        mdl_loss, mdl_f1 = self.mdl(pooler_output.detach(), labels.to(self.model_device), mask.to(self.model_device),
                                     return_f1=True)
 
         return {'test_loss': loss, 'test_loss_mean': loss_mean, 'test_rmse_loss': rmse_loss,
                 'test_rmse_loss_mean': rmse_loss_mean, 'test_mae_loss': mae_loss, 'test_mae_loss_mean': mae_loss_mean,
                 'test_mask_direction_loss': mdl_loss, 'test_mask_direction_f1': mdl_f1}
 
-    def test_end(self, outputs) -> dict:
+    def test_epoch_end(self, outputs):
         avg_loss, avg_metrics = self.aggregate_metrics(outputs, stage='test')
 
-        tensorboard_logs = {**{'test_loss': avg_loss}, **avg_metrics}
+        tensorboard_logs = {**{'avg_test_loss': avg_loss}, **avg_metrics}
 
-        return {'avg_test_loss': avg_loss, 'progress_bar': tensorboard_logs}
+        self.log_dict(tensorboard_logs, prog_bar=True)
+
+        # return {'avg_test_loss': avg_loss, 'progress_bar': tensorboard_logs}
 
     def configure_optimizers(self):
         return torch.optim.Adam([p for p in self.parameters() if p.requires_grad],
                                 lr=self.configs.optimizer.learning_rate,
                                 eps=self.configs.optimizer.epsilon)
 
-    @pl.data_loader
     def train_dataloader(self) -> DataLoader:
         return self.train_loader
 
-    @pl.data_loader
     def val_dataloader(self) -> DataLoader:
         return self.val_loader
 
-    @pl.data_loader
     def test_dataloader(self) -> DataLoader:
         return self.test_loader
 
