@@ -237,20 +237,18 @@ class ModelForFM(pl.LightningModule):
         self.configs = configs
 
         self.model_device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
         self.net = Model(configs, self.model_device)
 
         self.criterion = MaskedMSELoss(reduction=configs.get('reduction_strategy', 'sum'))
-
         self.rmse = MaskedRMSELoss(reduction=configs.get('reduction_strategy', 'sum'))
-
         self.mae = MaskedMAELoss(reduction=configs.get('reduction_strategy', 'sum'))
-
         self.mdl = MaskedDirectionLoss(reduction=configs.get('reduction_strategy', 'sum'))
 
         self.data_processor = DataProcessor(configs.dataset_path)
-
         self.metrics = configs.get('metrics', [])
+
+        if configs.get('weights_path', None) is not None:
+            self.load_weights(configs['weights_path'])
 
     def forward(self, **params):
         device_params = {k: v.to(self.model_device) if v is not None else v for k, v in params.items()}
@@ -395,3 +393,14 @@ class ModelForFM(pl.LightningModule):
                 avg_metrics.update({'avg_' + key_name: torch.tensor(0.0)})
 
         return avg_loss, avg_metrics
+
+    def load_weights(self, weights_path):
+        try:
+            if weights_path.endswith('.ckpt'):
+                self.load_state_dict(torch.load(weights_path)['state_dict'])
+            else:
+                self.load_state_dict(torch.load(weights_path))
+
+        except Exception as e:
+            print(e)
+            print('Failed to load weights from {}'.format(weights_path))
