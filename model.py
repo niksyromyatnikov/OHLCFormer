@@ -382,7 +382,7 @@ class ModelForFM(pl.LightningModule):
     def test_dataloader(self) -> DataLoader:
         return self.test_loader
 
-    def load_dataset(self, dataset_path: str = None) -> tuple:
+    def load_dataset(self, dataset_path = None) -> tuple:
         dataset_path = dataset_path if dataset_path is not None else self.configs.dataset_path
 
         dataset = self.data_processor.prepare_dataset(dataset_path, self.configs.train_set_prop,
