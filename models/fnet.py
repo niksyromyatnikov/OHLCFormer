@@ -1,11 +1,13 @@
 import torch
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
+from models.builder import register_model
 from models.losses import MaskedMSELoss, MaskedRMSELoss, MaskedMAELoss, MaskedDirectionLoss
-from model import Model
+from models import Model
 from data import DataProcessor
 
 
+@register_model('FNetForFM')
 class FNetForFM(pl.LightningModule):
 
     def __init__(self, configs):
