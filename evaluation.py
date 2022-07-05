@@ -1,14 +1,13 @@
 import pytorch_lightning as pl
 from dotmap import DotMap
-
-from model import ModelForFM
+from models import FNetForFM
 from utils import load_model_configs
 
 
 def run_tests(tests: dict, configs: DotMap = None, configs_path: str = None) -> dict:
     configs = load_model_configs(configs_path) if configs is None else configs
 
-    model = ModelForFM(configs)
+    model = FNetForFM(configs)
     model.cuda()
 
     result = {}
