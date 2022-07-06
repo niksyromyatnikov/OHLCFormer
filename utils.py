@@ -22,6 +22,15 @@ def load_model_configs(model_dir: str):
     return configs
 
 
+def load_from_configs(configs):
+    if configs is None:
+        raise TypeError('Expected configs object but got None instead')
+
+    model = ModelBuilder.build(configs)
+
+    return model
+
+
 def load_from_dir(model_dir: str):
     configs = load_model_configs(model_dir)
 
@@ -30,7 +39,7 @@ def load_from_dir(model_dir: str):
 
     checkpoint = find_checkpoint(model_dir)
     if checkpoint is not None:
-        configs.checkpoint = model_dir + checkpoint
+        configs.checkpoint = checkpoint
         print("Loading model from checkpoint: ", configs.checkpoint)
 
     model = ModelBuilder.build(configs)
@@ -45,7 +54,7 @@ def find_checkpoint(model_dir: str):
     try:
         for file in os.listdir(checkpoint_dir):
             if file.endswith('.ckpt'):
-                checkpoint = file
+                checkpoint = checkpoint_dir + file
     except Exception as e:
         print(e)
 

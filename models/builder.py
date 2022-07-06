@@ -12,6 +12,7 @@ def register_model(name: str = None) -> type:
     Returns:
         type: Type of the registered class.
     """
+
     def decorate(cls: type, model_name: str = None) -> type:
         global models_implementations_dict
 
@@ -50,3 +51,5 @@ class ModelBuilder(object):
             return cls.models_dict[configs.model_type](configs)
         except KeyError:
             raise "{} architecture not implemented!".format(configs.model_type)
+        except TypeError:
+            raise TypeError("Model type is not specified!")

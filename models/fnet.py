@@ -26,8 +26,8 @@ class FNetForFM(pl.LightningModule):
         self.data_processor = DataProcessor(configs)
         self.metrics = configs.get('metrics', [])
 
-        if configs.get('weights_path', None) is not None:
-            self.load_weights(configs['weights_path'])
+        self.load_checkpoint(configs)
+        self.load_weights(configs)
 
         self.train_loader = None
         self.val_loader = None
@@ -192,13 +192,18 @@ class FNetForFM(pl.LightningModule):
 
         return avg_loss, avg_metrics
 
-    def load_weights(self, weights_path):
-        try:
-            if weights_path.endswith('.ckpt'):
-                self.load_state_dict(torch.load(weights_path)['state_dict'])
-            else:
-                self.load_state_dict(torch.load(weights_path))
+    def load_checkpoint(self, configs):
+        if configs.get('checkpoint', None) is not None:
+            try:
+                self.load_state_dict(torch.load(configs.checkpoint)['state_dict'])
+            except Exception as e:
+                print(e)
+                print('Failed to load checkpoint from {}'.format(configs.checkpoint))
 
-        except Exception as e:
-            print(e)
-            print('Failed to load weights from {}'.format(weights_path))
+    def load_weights(self, configs):
+        if configs.get('weights_path', None) is not None:
+            try:
+                self.load_state_dict(torch.load(configs.weights_path))
+            except Exception as e:
+                print(e)
+                print('Failed to load weights from {}'.format(configs.weights_path))
