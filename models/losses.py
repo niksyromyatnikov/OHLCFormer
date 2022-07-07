@@ -92,6 +92,7 @@ class MaskedMAELoss(torch.nn.Module):
 
         return out
 
+
 class MaskedDirectionLoss(nn.Module):
     def __init__(self, weighted=False, reduction='sum'):
         super(MaskedDirectionLoss, self).__init__()
@@ -136,6 +137,12 @@ class MaskedDirectionLoss(nn.Module):
             return out, f1_score(prediction_labeled.cpu(), target_labeled.cpu())
 
         return out
+
+
+def get_metric_direction(metric_name) -> bool:
+    if metric_name == "f1":
+        return True
+    return False
 
 
 """
