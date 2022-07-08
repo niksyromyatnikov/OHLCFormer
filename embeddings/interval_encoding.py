@@ -1,36 +1,13 @@
 import math
 import torch
 from torch import nn
+from embeddings import Encoding
 
 
-class PositionalEncoding(nn.Module):
-
-    def __init__(self, configs):
-        super().__init__()
-        self.dropout = nn.Dropout(p=configs.dropout_proba)
-        self.ff = nn.Linear(configs.input_size, configs.hidden_size, bias=True)
-
-        position = torch.arange(configs.max_seq_length).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, configs.hidden_size, 2) * (-math.log(10000.0) / configs.hidden_size))
-        pe = torch.zeros(configs.max_seq_length, configs.hidden_size)
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        self.register_buffer('pe', pe)
-
-    def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-            x: Tensor, shape [seq_len, batch_size, embedding_dim]
-        """
-        x = self.ff(input_ids)
-        x = x + self.pe[:x.size(-2)]
-        return self.dropout(x)
-
-
-class IntervalEncoding(nn.Module):
+class IntervalEncoding(Encoding):
 
     def __init__(self, configs):
-        super().__init__()
+        super(IntervalEncoding, self).__init__(configs)
         self.dropout = nn.Dropout(p=configs.dropout_proba)
         self.ff = nn.Linear(configs.input_size, configs.hidden_size, bias=True)
 
@@ -50,22 +27,17 @@ class IntervalEncoding(nn.Module):
     def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            x: Tensor, shape [seq_len, batch_size, embedding_dim]
+            input_ids: Tensor, shape [seq_len, batch_size, embedding_dim]
         """
         x = self.ff(input_ids)
         x = x + self.pe[:x.size(-2)]
         return self.dropout(x)
 
-    def normalize(self, var, a=-1, b=1):
-        var_min = torch.min(var)
-        var_max = torch.max(var)
-        return (b - a) * (var - var_min) / (var_max - var_min) + a
 
-
-class IntervalEncodingTrainable(nn.Module):
+class IntervalEncodingTrainable(Encoding):
 
     def __init__(self, configs):
-        super().__init__()
+        super(IntervalEncodingTrainable, self).__init__(configs)
         self.dropout = nn.Dropout(p=configs.dropout_proba)
         self.ff = nn.Linear(configs.input_size, configs.hidden_size, bias=True)
 
@@ -89,7 +61,7 @@ class IntervalEncodingTrainable(nn.Module):
     def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            x: Tensor, shape [seq_len, batch_size, embedding_dim]
+            input_ids: Tensor, shape [seq_len, batch_size, embedding_dim]
         """
         # self.inc_term = nn.Parameter(self.x_arg / self.max_seq_length ** (1 / self.encoding_epsilon) - self.encoding_gamma ** self.x_arg)
 
@@ -99,8 +71,3 @@ class IntervalEncodingTrainable(nn.Module):
         x = self.ff(input_ids)
         x = x + self.pe[:x.size(-2)]
         return self.dropout(x)
-
-    def normalize(self, var, a=-1, b=1):
-        var_min = torch.min(var)
-        var_max = torch.max(var)
-        return (b - a) * (var - var_min) / (var_max - var_min) + a

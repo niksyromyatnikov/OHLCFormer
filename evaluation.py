@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
 from dotmap import DotMap
-from models.losses import get_metric_direction
+from losses import get_metric_direction
 from utils import load_model_configs, load_from_configs, load_from_dir
 from heapq import nsmallest, nlargest
 
