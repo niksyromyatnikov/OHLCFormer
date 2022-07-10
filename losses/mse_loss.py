@@ -1,10 +1,12 @@
 import torch
+from losses.builder import register_loss
 from losses.loss import Loss
 
 
+@register_loss('masked_mse_loss')
 class MaskedMSELoss(Loss):
-    def __init__(self, weighted=False, reduction='sum'):
-        super(MaskedMSELoss, self).__init__(weighted, reduction)
+    def __init__(self, weighted=False, reduction='sum', name=None):
+        super(MaskedMSELoss, self).__init__(weighted, reduction, name)
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor, mask, ignored_index=0, reduction=None):
         reduction = reduction if reduction else self.reduction

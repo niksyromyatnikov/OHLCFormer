@@ -1,12 +1,13 @@
 import torch
 from sklearn.metrics import f1_score
-
+from losses.builder import register_loss
 from losses.loss import Loss
 
 
+@register_loss('masked_direction_loss')
 class MaskedDirectionLoss(Loss):
-    def __init__(self, weighted=False, reduction='sum'):
-        super(MaskedDirectionLoss, self).__init__(weighted, reduction)
+    def __init__(self, weighted=False, reduction='sum', name=None):
+        super(MaskedDirectionLoss, self).__init__(weighted, reduction, name)
         self.criterion = torch.nn.BCELoss()
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor, mask, ignored_index=0, reduction=None,
