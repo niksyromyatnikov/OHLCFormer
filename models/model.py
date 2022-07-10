@@ -1,8 +1,10 @@
+from collections import defaultdict
+
 import torch
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from data import DataProcessor
-from losses import MaskedMSELoss, MaskedRMSELoss, MaskedMAELoss, MaskedDirectionLoss
+from losses import LossBuilder, MaskedDirectionLoss, default_loss
 from models.modeling import Model
 
 
@@ -16,10 +18,9 @@ class ModelForFM(pl.LightningModule):
         self.model_device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.net = Model(configs, self.model_device)
 
-        self.criterion = MaskedMSELoss(reduction=configs.get('reduction_strategy', 'sum'))
-        self.rmse = MaskedRMSELoss(reduction=configs.get('reduction_strategy', 'sum'))
-        self.mae = MaskedMAELoss(reduction=configs.get('reduction_strategy', 'sum'))
-        self.mdl = MaskedDirectionLoss(reduction=configs.get('reduction_strategy', 'sum'))
+        self.losses = []
+        for loss_config in configs.get('losses', default_loss):
+            self.losses.append(LossBuilder.build(loss_config))
 
         self.data_processor = DataProcessor(configs)
         self.metrics = configs.get('metrics', [])
@@ -56,24 +57,7 @@ class ModelForFM(pl.LightningModule):
 
         # print(pooler_output, pooler_output.shape)
 
-        loss = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        loss_mean = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
-                                   reduction='mean')
-
-        rmse_loss = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
-                                   reduction='mean')
-
-        mae_loss = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        mae_loss_mean = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
-                                 reduction='mean')
-
-        mdl_loss, mdl_f1 = self.mdl(pooler_output.detach(), labels.to(self.model_device), mask.to(self.model_device),
-                                    return_f1=True)
-
-        return {'loss': loss, 'loss_mean': loss_mean, 'rmse_loss': rmse_loss, 'rmse_loss_mean': rmse_loss_mean,
-                'mae_loss': mae_loss, 'mae_loss_mean': mae_loss_mean, 'mask_direction_loss': mdl_loss,
-                'mask_direction_f1': mdl_f1}
+        return self.calculate_losses(pooler_output, labels, mask)
 
     def validation_step(self, batch, batch_nb) -> dict:
         input_ids, attention_mask, mask, labels = batch[:4]
@@ -82,24 +66,7 @@ class ModelForFM(pl.LightningModule):
 
         pooler_output = outputs[1]
 
-        loss = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        loss_mean = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
-                                   reduction='mean')
-
-        rmse_loss = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
-                                   reduction='mean')
-
-        mae_loss = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        mae_loss_mean = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
-                                 reduction='mean')
-
-        mdl_loss, mdl_f1 = self.mdl(pooler_output.detach(), labels.to(self.model_device), mask.to(self.model_device),
-                                    return_f1=True)
-
-        return {'val_loss': loss, 'val_loss_mean': loss_mean, 'val_rmse_loss': rmse_loss,
-                'val_rmse_loss_mean': rmse_loss_mean, 'val_mae_loss': mae_loss, 'val_mae_loss_mean': mae_loss_mean,
-                'val_mask_direction_loss': mdl_loss, 'val_mask_direction_f1': mdl_f1}
+        return self.calculate_losses(pooler_output, labels, mask, stage='val')
 
     def validation_epoch_end(self, outputs):
         avg_loss, avg_metrics = self.aggregate_metrics(outputs, stage='val')
@@ -117,24 +84,7 @@ class ModelForFM(pl.LightningModule):
 
         pooler_output = outputs[1]
 
-        loss = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        loss_mean = self.criterion(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
-                                   reduction='mean')
-
-        rmse_loss = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        rmse_loss_mean = self.rmse(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
-                                   reduction='mean')
-
-        mae_loss = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device))
-        mae_loss_mean = self.mae(pooler_output, labels.to(self.model_device), mask.to(self.model_device),
-                                 reduction='mean')
-
-        mdl_loss, mdl_f1 = self.mdl(pooler_output.detach(), labels.to(self.model_device), mask.to(self.model_device),
-                                    return_f1=True)
-
-        return {'test_loss': loss, 'test_loss_mean': loss_mean, 'test_rmse_loss': rmse_loss,
-                'test_rmse_loss_mean': rmse_loss_mean, 'test_mae_loss': mae_loss, 'test_mae_loss_mean': mae_loss_mean,
-                'test_mask_direction_loss': mdl_loss, 'test_mask_direction_f1': mdl_f1}
+        return self.calculate_losses(pooler_output, labels, mask, stage='test')
 
     def test_epoch_end(self, outputs):
         avg_loss, avg_metrics = self.aggregate_metrics(outputs, stage='test')
@@ -172,21 +122,37 @@ class ModelForFM(pl.LightningModule):
 
         return self.train_loader is not None, self.val_loader is not None, self.test_loader is not None
 
-    def aggregate_metrics(self, outputs, stage='val'):
-        avg_loss = torch.stack([x[stage + '_loss'] for x in outputs]).mean()
-        avg_metrics = {}
+    def calculate_losses(self, output: torch.Tensor, labels: torch.Tensor, mask: torch.Tensor, stage: str = '') -> dict:
+        calculated_losses = {}
 
-        for metric in self.metrics:
-            key_name = stage + '_' + metric
-            try:
-                avg_metrics.update(
-                    {'avg_' + key_name: torch.stack(
-                        [x[key_name] if isinstance(x[key_name], torch.Tensor)
-                         else torch.tensor(x[key_name]) for x in outputs if x[key_name] >= 0.0]
-                    ).mean()
-                     })
-            except RuntimeError:
-                avg_metrics.update({'avg_' + key_name: torch.tensor(0.0)})
+        for loss in self.losses:
+            name = (stage + '_' if stage is not None and len(stage) > 0 else '') + loss.name
+            if isinstance(loss, MaskedDirectionLoss):
+                loss_val, f1 = loss(output.detach(), labels.to(self.model_device), mask.to(self.model_device),
+                                    return_f1=True)
+                calculated_losses[name] = loss_val
+                calculated_losses['_'.join(loss.name.split('_')[:-1] + ['f1'])] = f1
+            else:
+                calculated_losses[name] = loss(output, labels.to(self.model_device), mask.to(self.model_device))
+                calculated_losses[name + '_mean'] = loss(output, labels.to(self.model_device),
+                                                         mask.to(self.model_device), reduction='mean')
+
+        return calculated_losses
+
+    def aggregate_metrics(self, outputs: list, stage='val'):
+        avg_loss = torch.stack([x[stage + '_loss'] for x in outputs]).mean()
+        avg_metrics = defaultdict(list)
+
+        for x in outputs:
+            for k, v in x.items():
+                key = 'avg_' + k
+                if isinstance(v, torch.Tensor):
+                    avg_metrics[key].append(v)
+                else:
+                    avg_metrics[key].append(torch.tensor(v))
+
+        for k, v in avg_metrics.items():
+            avg_metrics[k] = torch.stack(v).mean()
 
         return avg_loss, avg_metrics
 
