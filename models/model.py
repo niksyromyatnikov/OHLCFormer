@@ -3,7 +3,7 @@ from collections import defaultdict
 import torch
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
-from data import DataProcessor
+from data import DataProcessor, mask_tokens
 from losses import LossBuilder, MaskedDirectionLoss, default_loss
 from models.modeling import Model
 
@@ -39,17 +39,17 @@ class ModelForFM(pl.LightningModule):
 
         return outputs
 
-    def mask_input(self, inputs, mask):
-        # masking input
-        mask = torch.ones(inputs.shape[0], inputs.shape[1]).to(self.model_device)
-        mask[inputs == 0] = 0
+    def prepare_batch(self, batch) -> tuple:
+        if not self.configs.get('lazy_preprocessing', False):
+            return batch
 
-        inputs[mask == 0] = torch.Tensor([0, 0, 0, 0])
+        input_ids, attention_mask = batch[:2]
+        input_ids, labels, mask = mask_tokens(input_ids, attention_mask)
 
-        return mask
+        return [input_ids, attention_mask, mask, labels] + batch[2:]
 
     def training_step(self, batch, batch_nb) -> dict:
-        input_ids, attention_mask, mask, labels = batch[:4]
+        input_ids, attention_mask, mask, labels = self.prepare_batch(batch)[:4]
 
         outputs = self.forward(input_ids=input_ids, attention_mask=attention_mask)
 
@@ -60,7 +60,7 @@ class ModelForFM(pl.LightningModule):
         return self.calculate_losses(pooler_output, labels, mask)
 
     def validation_step(self, batch, batch_nb) -> dict:
-        input_ids, attention_mask, mask, labels = batch[:4]
+        input_ids, attention_mask, mask, labels = self.prepare_batch(batch)[:4]
 
         outputs = self.forward(input_ids=input_ids, attention_mask=attention_mask)
 
@@ -78,7 +78,7 @@ class ModelForFM(pl.LightningModule):
         # return {'avg_val_loss': avg_loss, 'progress_bar': tensorboard_logs}
 
     def test_step(self, batch, batch_nb) -> dict:
-        input_ids, attention_mask, mask, labels = batch[:4]
+        input_ids, attention_mask, mask, labels = self.prepare_batch(batch)[:4]
 
         outputs = self.forward(input_ids=input_ids, attention_mask=attention_mask)
 
