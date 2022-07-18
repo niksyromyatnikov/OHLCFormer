@@ -64,21 +64,30 @@ def convert_to_tensor_dataset(dataset: list,
                              torch.tensor([f.attention_mask for f in features], dtype=torch.long))
 
 
-def mask_tokens(input_ids: torch.Tensor, attention_mask: torch.Tensor, seq_len: int = 2000, mask_proba: float = 0.2):
+def mask_tokens(input_ids: torch.Tensor,
+                attention_mask: torch.Tensor,
+                seq_len: int = 2000,
+                mask_proba: float = 0.2,
+                prediction_len: int = 5
+                ) -> tuple:
     batch_size = input_ids.shape[0]
     element_len = input_ids.shape[-1]
+    masked_input_ids = input_ids.clone()
 
     mask = torch.rand(batch_size, seq_len, device=input_ids.device) < mask_proba
     mask[attention_mask == 0] = 0
-    labels_pad_len = torch.max(torch.sum(mask, 1)).item()
 
-    masked_input_ids = input_ids.clone()
-    masked_input_ids[mask] = torch.zeros(1, element_len, device=input_ids.device)
-
+    labels_pad_len = torch.max(torch.sum(mask, 1)).item() + prediction_len
     labels_batch = torch.zeros(batch_size, labels_pad_len, element_len, device=input_ids.device)
 
+    end_of_seq = torch.argmin(attention_mask, 1)
+    end_of_seq[(attention_mask[:, 0] == 1) & (end_of_seq == 0)] = seq_len
+
     for i, row in enumerate(input_ids):
+        mask[i][end_of_seq[i]-prediction_len:end_of_seq[i]] = 1
         labels = row[mask[i]]
         labels_batch[i][:labels.shape[0]] = labels
+
+    masked_input_ids[mask] = torch.zeros(1, element_len, device=input_ids.device)
 
     return masked_input_ids, labels_batch, mask.long()
