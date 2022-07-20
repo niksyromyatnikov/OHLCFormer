@@ -44,7 +44,17 @@ class ModelForFM(pl.LightningModule):
             return batch
 
         input_ids, attention_mask = batch[:2]
-        input_ids, labels, mask = mask_tokens(input_ids, attention_mask)
+
+        args = {'input_ids': input_ids, 'attention_mask': attention_mask}
+
+        if self.configs.get('max_seq_length', None) is not None:
+            args['seq_len'] = self.configs['max_seq_length']
+        if self.configs.get('mask_proba', None) is not None:
+            args['mask_proba'] = self.configs['mask_proba']
+        if self.configs.get('prediction_len', None) is not None:
+            args['prediction_len'] = self.configs['prediction_len']
+
+        input_ids, labels, mask = mask_tokens(**args)
 
         return [input_ids, attention_mask, mask, labels] + batch[2:]
 

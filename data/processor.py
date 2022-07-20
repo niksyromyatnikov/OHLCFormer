@@ -49,6 +49,6 @@ class DataProcessor:
             test_sampler = RandomSampler(test_subset)
             test_dataloader = DataLoader(test_subset, sampler=test_sampler, batch_size=batch_size)
         elif test_dataset is not None:
-            test_dataloader = DataLoader(test_dataset, shuffle=True, batch_size=batch_size)
+            test_dataloader = DataLoader(test_dataset, batch_size=batch_size)
 
         return train_dataloader, val_dataloader, test_dataloader

@@ -26,32 +26,34 @@ def convert_to_tensor_dataset(dataset: list,
     labels_pad_len = int(max_seq_len * (mask_proba + 0.05)) if mask_proba > 0 else 0
 
     for row in dataset:
-        seq_len = len(row)
+        input_ids = row.copy()
+        seq_len = len(input_ids)
         pad_len = max_seq_len - seq_len
 
+        if seq_len < prediction_len + 0.3 * seq_len:
+            continue
+
         attention_mask = [1] * max_seq_len
-        input_ids = row + [[0] * len(row[0])] * pad_len
+        attention_mask[seq_len:] = [0] * pad_len
 
         if perform_masking:
             mask = [0] * max_seq_len
             labels = []
 
-            if seq_len < prediction_len + 0.3 * seq_len:
-                continue
-
-            attention_mask[seq_len:] = [0] * pad_len
             vals = [True, False]
             weights = [1 - mask_proba, mask_proba]
 
-            for i, elem in enumerate(row):
+            for i, elem in enumerate(input_ids):
                 if i >= seq_len - prediction_len or not random.choices(vals, weights)[0]:
                     labels.append(elem)
-                    row[i] = [0] * len(elem)
+                    input_ids[i] = [0] * len(elem)
                     mask[i] = 1
 
             labels = labels + [[0] * 4] * (labels_pad_len - len(labels) if labels_pad_len - len(labels) > 0 else 0)
+            input_ids += [[0] * len(input_ids[0])] * pad_len
             features.append(InputFeatures(input_ids, attention_mask, mask, labels))
         else:
+            input_ids += [[0] * len(input_ids[0])] * pad_len
             features.append(InputFeatures(input_ids, attention_mask))
 
     if perform_masking:
