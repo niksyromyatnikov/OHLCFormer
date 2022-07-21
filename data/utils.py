@@ -1,38 +1,36 @@
 import json
 import os
 import random
+from pathlib import Path
 from datetime import datetime
 
 
-def read_stocks_dir(path):
+def read_stocks_dir(path: Path, verbose=False):
     stocks = []
 
     for stock in os.listdir(path):
-        if stock in ['.idea']:
-            continue
-
-        stock_path = path + '/' + stock
+        stock_path = path / str(stock)
         stock_data = []
 
         with open(stock_path) as file:
             stock_data = json.load(file)
 
         stocks.append(stock_data)
-        print(stock, ":", len(stock_data))
+
+        if verbose:
+            print(f'{stock} : {len(stock_data)}')
 
     return stocks
 
 
-def convert_stock_data(stocks_path, preprocessed_stocks_path):
+def convert_stock_data(stocks_path: Path, preprocessed_stocks_path: Path, verbose=False):
     for stock in os.listdir(stocks_path):
-        if stock in ['.idea']:
-            continue
-
-        stock_dir = stocks_path + '/' + stock
+        stock = str(stock)
+        stock_dir = stocks_path / stock
         stock_data = []
 
         for stock_period in os.listdir(stock_dir):
-            stock_period_path = stock_dir + '/' + stock_period
+            stock_period_path = stock_dir / str(stock_period)
             data = []
 
             with open(stock_period_path) as file:
@@ -42,22 +40,31 @@ def convert_stock_data(stocks_path, preprocessed_stocks_path):
                 row['date'] = datetime.strptime(row['date'], '%Y-%m-%dT%H:%M:%S.%fZ').timestamp()
                 stock_data.append(row)
 
-        print(stock, ":", len(stock_data))
+        if verbose:
+            print(f'{stock} : {len(stock_data)}')
 
-        with open(preprocessed_stocks_path + '/' + stock + '.json', 'w', encoding='utf8') as outfile:
+        output_file = (preprocessed_stocks_path / stock).with_suffix('.json')
+        output_file.parent.mkdir(exist_ok=True, parents=True)
+
+        with open(output_file, 'w', encoding='utf8') as outfile:
             json.dump(stock_data, outfile, ensure_ascii=False)
 
 
-def split_time_series(stocks, lens=None) -> list:
+def split_time_series(stocks, lens=None, seed: int = None) -> list:
     dataset = []
     if lens is None:
         lens = [60, 100, 120, 240, 480, 960, 1000, 1440, 1920, 2000]
+
+    if seed is not None:
+        rand = random.Random(seed)
+    else:
+        rand = random
 
     for stock in stocks:
         i = 0
 
         while i < len(stock):
-            j = random.choice(lens)
+            j = rand.choice(lens)
             dataset.append(stock[i:i + j])
             i = i + j
 

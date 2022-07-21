@@ -20,8 +20,14 @@ def convert_to_tensor_dataset(dataset: list,
                               max_seq_len: int = 2000,
                               mask_proba: float = 0.2,
                               prediction_len: int = 5,
-                              perform_masking: bool = True
+                              perform_masking: bool = True,
+                              seed: int = None
                               ) -> TensorDataset:
+    if seed is not None:
+        rand = random.Random(seed)
+    else:
+        rand = random
+
     features = []
     labels_pad_len = int(max_seq_len * (mask_proba + 0.05)) if mask_proba > 0 else 0
 
@@ -44,7 +50,7 @@ def convert_to_tensor_dataset(dataset: list,
             weights = [1 - mask_proba, mask_proba]
 
             for i, elem in enumerate(input_ids):
-                if i >= seq_len - prediction_len or not random.choices(vals, weights)[0]:
+                if i >= seq_len - prediction_len or not rand.choices(vals, weights)[0]:
                     labels.append(elem)
                     input_ids[i] = [0] * len(elem)
                     mask[i] = 1
