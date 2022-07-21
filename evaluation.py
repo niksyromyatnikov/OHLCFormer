@@ -1,11 +1,17 @@
 import pytorch_lightning as pl
 from dotmap import DotMap
 from losses import get_metric_direction
+from models import ModelForFM, get_accelerator_type
 from utils import load_model_configs, load_from_configs, load_from_dir
 from heapq import nsmallest, nlargest
 
 
-def run_tests(tests: dict, model=None, configs: DotMap = None, configs_path: str = None, model_dir: str = None) -> dict:
+def run_tests(tests: dict,
+              model: ModelForFM = None,
+              configs: DotMap = None,
+              configs_path: str = None,
+              model_dir: str = None
+              ) -> dict:
     configs = load_model_configs(configs_path) if configs is None and configs_path is not None else configs
 
     if model is None:
@@ -16,16 +22,31 @@ def run_tests(tests: dict, model=None, configs: DotMap = None, configs_path: str
         else:
             raise ValueError('Expected one of [model object, configs, configs_path, model_dir] to be provided')
 
-    model.cuda()
-
     result = {}
+    default_model_configs = model.get_configs()
 
-    trainer = pl.Trainer(gpus=1)
+    trainer = pl.Trainer(devices="auto", accelerator=get_accelerator_type(model.get_device()))
 
-    for name, test_path in tests.items():
-        model.load_dataset({'test_dataset': test_path})
-        # print(name, len(model.test_loader))
+    for name, test in tests.items():
+        test_configs = {}
+
+        if isinstance(test, str):
+            test_configs['dataset_path'] = test
+        elif isinstance(test, dict):
+            for config_name, config_val in test.items():
+                if config_name == 'dataset_path':
+                    test_configs['dataset_path'] = config_val
+                    continue
+
+                try:
+                    model.set_config(config_name, config_val)
+                except TypeError as e:
+                    print(f'Failed to set config {config_name} to {config_val}')
+                    print(e)
+
+        model.load_dataset({'test_dataset': test_configs['dataset_path']})
         result[name] = trainer.test(model, verbose=False)
+        model.set_configs(default_model_configs)
 
     return result
 
