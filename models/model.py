@@ -1,11 +1,11 @@
-from collections import defaultdict
-
 import torch
-from torch.utils.data import DataLoader
 import pytorch_lightning as pl
+from torch.utils.data import DataLoader
 from data import DataProcessor, mask_tokens
 from losses import LossBuilder, MaskedDirectionLoss, default_loss
-from models.modeling import Model
+from models import Model
+from collections import defaultdict
+from copy import deepcopy
 
 
 class ModelForFM(pl.LightningModule):
@@ -15,7 +15,9 @@ class ModelForFM(pl.LightningModule):
 
         self.configs = configs
 
-        self.model_device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.device_name = get_device_type(configs.get('device', None))
+        self.model_device = torch.device(self.device_name)
+
         self.net = Model(configs, self.model_device)
 
         self.losses = []
@@ -31,6 +33,8 @@ class ModelForFM(pl.LightningModule):
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
+
+        self.to(self.model_device)
 
     def forward(self, **params):
         device_params = {k: v.to(self.model_device) if v is not None else v for k, v in params.items()}
@@ -181,3 +185,30 @@ class ModelForFM(pl.LightningModule):
             except Exception as e:
                 print(e)
                 print('Failed to load weights from {}'.format(configs.weights_path))
+
+    def get_configs(self):
+        return deepcopy(self.configs)
+
+    def set_config(self, configs_name, configs_value):
+        self.configs[configs_name] = configs_value
+
+    def set_configs(self, configs):
+        self.configs = deepcopy(configs)
+
+    def get_device(self, return_str=True, return_pytorch=False):
+        if return_str:
+            return self.device_name
+        elif return_pytorch:
+            return self.model_device
+
+
+def get_device_type(device):
+    return device if device in ['cpu', 'cuda', 'xla'] else 'cuda' if torch.cuda.is_available() else 'cpu'
+
+
+def get_accelerator_type(device):
+    replacements = {'xla': 'tpu', 'cuda': 'gpu'}
+    for x, y in replacements.items():
+        device = device.replace(x, y)
+
+    return device if device in ['cpu', 'gpu', 'tpu'] else 'gpu' if torch.cuda.is_available() else 'cpu'

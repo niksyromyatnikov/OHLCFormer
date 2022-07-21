@@ -1,5 +1,11 @@
+from .modeling import (
+    Model
+)
+
 from .model import (
-    Model,
+    ModelForFM,
+    get_device_type,
+    get_accelerator_type
 )
 
 from .fnet import (
