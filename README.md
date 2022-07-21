@@ -19,3 +19,36 @@
 <h3 align="center">
     <p>Neural networks training and evaluation tool for open-high-low-close (OHLC) data forecasting.</p>
 </h3>
+OHLCFormer provides an easy-to-use API for model prototyping, training, and evaluation to perform open-high-low-close (OHLC) data forecasting tasks.
+
+## Getting started
+You can find here a list of the official notebooks.
+
+<table>
+  <tr>
+    <td style="text-align: center;">Notebook</td>
+    <td style="text-align: center;">Description</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/niksyromyatnikov/OHLCFormer/blob/master/examples/notebooks/data-processing.ipynb">Data processing</a></td>
+    <td>How to preprocess your data and build a dataset.</td>
+    <td><a href="https://colab.research.google.com/github/niksyromyatnikov/OHLCFormer/blob/master/examples/notebooks/data-processing.ipynb"><img alt="Open in Colab" src="https://colab.research.google.com/assets/colab-badge.svg"></a></td>
+  </tr>
+  <tr>
+    <td><a href="">Model training</a></td>
+    <td>How to set up and train a model on your dataset.</td>
+    <td></td>
+  </tr>
+<tr>
+    <td><a href="">Models evaluation</a></td>
+    <td>How to benchmark models with OHLCFormer.</td>
+    <td></td>
+  </tr>
+</table>
+
+## Model architectures
+
+OHLCFormer currently provides the following architectures:
+1. **FNet** (from Google Research) released with the paper [FNet: Mixing Tokens with Fourier Transforms](https://arxiv.org/abs/2105.03824) by James Lee-Thorp, Joshua Ainslie, Ilya Eckstein, Santiago Ontanon.
+2. **BERT** (from Google) released with the paper [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/abs/1810.04805) by Jacob Devlin, Ming-Wei Chang, Kenton Lee and Kristina Toutanova.
