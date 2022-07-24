@@ -1,8 +1,7 @@
-import pytorch_lightning as pl
 from dotmap import DotMap
 from losses import get_metric_direction
-from models import ModelForFM, get_accelerator_type
-from utils import load_model_configs, load_from_configs, load_from_dir
+from models import ModelForFM
+from utils import load_model
 from heapq import nsmallest, nlargest
 
 
@@ -12,20 +11,15 @@ def run_tests(tests: dict,
               configs_path: str = None,
               model_dir: str = None
               ) -> dict:
-    configs = load_model_configs(configs_path) if configs is None and configs_path is not None else configs
+    model = model if model is not None else load_model(configs, configs_path, model_dir)
 
     if model is None:
-        if configs is not None:
-            model = load_from_configs(configs)
-        elif model_dir is not None:
-            model = load_from_dir(model_dir)
-        else:
-            raise ValueError('Expected one of [model object, configs, configs_path, model_dir] to be provided')
+        raise ValueError('Expected one of [model object, configs, configs_path, model_dir] to be provided')
 
     result = {}
     default_model_configs = model.get_configs()
 
-    trainer = pl.Trainer(devices="auto", accelerator=get_accelerator_type(model.get_device()))
+    trainer = model.configure_trainer()
 
     for name, test in tests.items():
         test_configs = {}
@@ -37,7 +31,6 @@ def run_tests(tests: dict,
                 if config_name == 'dataset_path':
                     test_configs['dataset_path'] = config_val
                     continue
-
                 try:
                     model.set_config(config_name, config_val)
                 except TypeError as e:
