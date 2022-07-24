@@ -1,5 +1,8 @@
+import copy
+
 import torch
 import pytorch_lightning as pl
+from dotmap import DotMap
 from torch.utils.data import DataLoader
 from data import DataProcessor, mask_tokens
 from losses import LossBuilder, MaskedDirectionLoss, default_loss
@@ -12,11 +15,11 @@ class ModelForFM(pl.LightningModule):
 
     def __init__(self, configs):
         super(ModelForFM, self).__init__()
-
         self.configs = configs
+        self.model_device = None
+        self.device_name = None
 
-        self.device_name = get_device_type(configs.get('device', None))
-        self.model_device = torch.device(self.device_name)
+        self.set_device(trainer=configs.get('trainer', None))
 
         self.net = Model(configs, self.model_device)
 
@@ -33,8 +36,6 @@ class ModelForFM(pl.LightningModule):
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
-
-        self.to(self.model_device)
 
     def forward(self, **params):
         device_params = {k: v.to(self.model_device) if v is not None else v for k, v in params.items()}
@@ -201,8 +202,28 @@ class ModelForFM(pl.LightningModule):
         elif return_pytorch:
             return self.model_device
 
+    def set_device(self, device: str = None, trainer: DotMap = None):
+        self.device_name = get_device_type(device, trainer)
+        self.model_device = torch.device(self.device_name)
+        self.to(self.model_device)
 
-def get_device_type(device):
+    def configure_trainer(self, **kwargs):
+        trainer_configs = deepcopy(self.configs.trainer)
+        for k, v in kwargs.items():
+            trainer_configs[k] = v
+
+        self.set_device(trainer=trainer_configs)
+        trainer_configs['accelerator'] = get_accelerator_type(get_device_type(trainer=trainer_configs))
+
+        if trainer_configs.get('devices', None) is None:
+            trainer_configs['devices'] = "auto"
+
+        trainer = pl.Trainer(**trainer_configs)
+        return trainer
+
+
+def get_device_type(device: str = None, trainer: DotMap = None):
+    device = trainer.get('accelerator', None) if trainer else device
     return device if device in ['cpu', 'cuda', 'xla'] else 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
