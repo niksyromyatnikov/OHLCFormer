@@ -3,8 +3,8 @@ import json
 from pathlib import Path
 from typing import Union
 
-from models import Model
-from models.builder import ModelBuilder
+from .models import Model
+from .models.builder import ModelBuilder
 from dotmap import DotMap
 
 

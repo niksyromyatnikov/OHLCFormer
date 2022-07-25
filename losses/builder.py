@@ -1,5 +1,4 @@
 import copy
-
 from dotmap import DotMap
 
 losses_implementations_dict = {}

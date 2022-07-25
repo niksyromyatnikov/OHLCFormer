@@ -1,5 +1,5 @@
-from models.builder import register_model
-from models.model import ModelForFM
+from .builder import register_model
+from .model import ModelForFM
 
 
 @register_model('FNetForFM')
