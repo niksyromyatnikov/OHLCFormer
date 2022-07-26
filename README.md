@@ -36,9 +36,9 @@ You can find here a list of the official notebooks.
     <td><a href="https://colab.research.google.com/github/niksyromyatnikov/OHLCFormer/blob/master/examples/notebooks/data-processing.ipynb"><img alt="Open in Colab" src="https://colab.research.google.com/assets/colab-badge.svg"></a></td>
   </tr>
   <tr>
-    <td><a href="">Model training</a></td>
+    <td><a href="https://github.com/niksyromyatnikov/OHLCFormer/blob/master/examples/notebooks/train_model.ipynb">Model training</a></td>
     <td>How to set up and train a model on your dataset.</td>
-    <td></td>
+    <td><a href="https://colab.research.google.com/github/niksyromyatnikov/OHLCFormer/blob/master/examples/notebooks/train_model.ipynb"><img alt="Open in Colab" src="https://colab.research.google.com/assets/colab-badge.svg"></a></td>
   </tr>
 <tr>
     <td><a href="">Models evaluation</a></td>
