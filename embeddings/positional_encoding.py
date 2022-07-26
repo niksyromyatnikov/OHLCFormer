@@ -1,7 +1,7 @@
 import math
 import torch
 from torch import nn
-from embeddings import Encoding
+from . import Encoding
 
 
 class PositionalEncoding(Encoding):

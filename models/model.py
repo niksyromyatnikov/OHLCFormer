@@ -1,14 +1,12 @@
-import copy
-
 import torch
 import pytorch_lightning as pl
 from dotmap import DotMap
-from torch.utils.data import DataLoader
-from data import DataProcessor, mask_tokens
-from losses import LossBuilder, MaskedDirectionLoss, default_loss
-from models import Model
 from collections import defaultdict
 from copy import deepcopy
+from torch.utils.data import DataLoader
+from ..data import DataProcessor, mask_tokens
+from ..losses import LossBuilder, MaskedDirectionLoss, default_loss
+from . import Model
 
 
 class ModelForFM(pl.LightningModule):

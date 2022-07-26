@@ -1,7 +1,7 @@
 import torch
 from sklearn.metrics import f1_score
-from losses.builder import register_loss
-from losses.loss import Loss
+from .builder import register_loss
+from .loss import Loss
 
 
 @register_loss('masked_direction_loss')
