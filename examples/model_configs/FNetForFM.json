@@ -38,12 +38,9 @@
     "default_root_dir": "training_logs/"
   },
   "losses": [
-    "loss_mean",
-    "rmse_loss",
-    "rmse_loss_mean",
-    "mae_loss",
-    "mae_loss_mean",
-    "mask_direction_loss",
-    "mask_direction_f1"
-  ]
+    {"loss_type": "masked_mse_loss", "weighted": false, "reduction": "sum", "name": "loss"},
+    {"loss_type": "masked_rmse_loss", "weighted": false, "reduction": "sum", "name": "rmse_loss"},
+    {"loss_type": "masked_mae_loss", "weighted": false, "reduction": "sum", "name": "mae_loss"},
+    {"loss_type": "masked_direction_loss", "weighted": false, "reduction": "sum", "name": "mask_direction_loss"}
+]
 }
