@@ -1,13 +1,15 @@
 from pathlib import Path
+from typing import Union
+
 from dotmap import DotMap
-from models import ModelForFM
-from utils import load_model
+from .models import ModelForFM
+from .utils import load_model
 
 
 def run_training(model: ModelForFM = None,
                  configs: DotMap = None,
-                 configs_path: str = None,
-                 model_dir: str = None,
+                 configs_path: Union[str, Path] = None,
+                 model_dir: Union[str, Path] = None,
                  datasets: dict = None,
                  evaluate: bool = False,
                  verbose: bool = True,
@@ -24,7 +26,7 @@ def run_training(model: ModelForFM = None,
 
         configs = model.get_configs()
 
-        if isinstance(dataset, str):
+        if isinstance(dataset, str) or isinstance(dataset, Path):
             train_configs['dataset_path'] = dataset
             dataset = train_configs
 

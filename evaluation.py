@@ -1,15 +1,18 @@
+from pathlib import Path
+from typing import Union
+
 from dotmap import DotMap
-from losses import get_metric_direction
-from models import ModelForFM
-from utils import load_model
 from heapq import nsmallest, nlargest
+from . import load_model
+from .losses import get_metric_direction
+from .models import ModelForFM
 
 
 def run_tests(tests: dict,
               model: ModelForFM = None,
               configs: DotMap = None,
-              configs_path: str = None,
-              model_dir: str = None
+              configs_path: Union[str, Path] = None,
+              model_dir: Union[str, Path] = None
               ) -> dict:
     model = model if model is not None else load_model(configs, configs_path, model_dir)
 
@@ -24,7 +27,7 @@ def run_tests(tests: dict,
     for name, test in tests.items():
         test_configs = {}
 
-        if isinstance(test, str):
+        if isinstance(test, str) or isinstance(test, Path):
             test_configs['dataset_path'] = test
         elif isinstance(test, dict):
             for config_name, config_val in test.items():
