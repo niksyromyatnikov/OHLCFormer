@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Union
+
 import torch
 from torch.utils.data import random_split, RandomSampler, DataLoader
 
@@ -7,10 +10,10 @@ class DataProcessor:
     def __init__(self, configs=None):
         pass
 
-    def load_dataset(self, dataset_path: str) -> tuple:
+    def load_dataset(self, dataset_path: Union[str, Path, dict]) -> tuple:
         dataset, val_dataset, test_dataset = None, None, None
 
-        if isinstance(dataset_path, str):
+        if isinstance(dataset_path, str) or isinstance(dataset_path, Path):
             dataset = torch.load(dataset_path)
         elif isinstance(dataset_path, dict):
             if dataset_path.get('train_dataset', None) is not None:
@@ -22,8 +25,8 @@ class DataProcessor:
 
         return dataset, val_dataset, test_dataset
 
-    def prepare_dataset(self, dataset_path: str, train_set_split_prop: int = 0.87, val_set_split_prop: int = 0.13,
-                        test_set_split_prop: int = 0.0, batch_size: int = 32):
+    def prepare_dataset(self, dataset_path: str, train_set_split_prop: float = 0.87, val_set_split_prop: float = 0.13,
+                        test_set_split_prop: float = 0.0, batch_size: int = 32):
         train_dataloader, val_dataloader, test_dataloader = None, None, None
         train_subset, val_subset, test_subset = None, None, None
 
@@ -34,6 +37,11 @@ class DataProcessor:
         nb_test_samples = len(dataset) - nb_train_samples - nb_val_samples if dataset and test_dataset is None else 0
 
         if dataset is not None:
+            dl = len(dataset)
+            nb_train_samples += dl - nb_train_samples - nb_val_samples - nb_test_samples if nb_train_samples > 0 else 0
+            nb_val_samples += dl - nb_train_samples - nb_val_samples - nb_test_samples if nb_val_samples > 0 else 0
+            nb_test_samples += dl - nb_train_samples - nb_val_samples - nb_test_samples if nb_test_samples > 0 else 0
+
             train_subset, val_subset, test_subset = random_split(dataset,
                                                                  [nb_train_samples, nb_val_samples, nb_test_samples])
             train_sampler = RandomSampler(train_subset)
