@@ -90,4 +90,4 @@ def compare_models(tests: dict, models: dict, top_k=0) -> (dict, dict):
             else nlargest(top_k, results[test_name][metric_name]) for metric_name in results[test_name].keys()
         }
 
-    return top, results
+    return (top, results) if top_k != len(models) else top
