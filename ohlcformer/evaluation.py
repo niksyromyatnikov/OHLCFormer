@@ -3,9 +3,9 @@ from typing import Union
 
 from dotmap import DotMap
 from heapq import nsmallest, nlargest
-from . import load_model
-from .losses import get_metric_direction
-from .models import ModelForFM
+from ohlcformer.utils import load_model
+from ohlcformer.losses import get_metric_direction
+from ohlcformer.models import ModelForFM
 
 
 def run_tests(tests: dict,

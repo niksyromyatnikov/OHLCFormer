@@ -2,10 +2,14 @@ import os
 import json
 from pathlib import Path
 from typing import Union
-
-from .models import Model
-from .models.builder import ModelBuilder
 from dotmap import DotMap
+from ohlcformer.models import Model
+from ohlcformer.models.builder import ModelBuilder
+from . import logging
+
+
+logger = logging.getLogger(__name__)
+print(__name__)
 
 
 def load_model(configs: DotMap = None, configs_path: str = None, model_dir: str = None) -> Model:

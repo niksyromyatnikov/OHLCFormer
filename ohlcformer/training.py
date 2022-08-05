@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import Union
 
 from dotmap import DotMap
-from .models import ModelForFM
-from .utils import load_model
+from ohlcformer.models import ModelForFM
+from ohlcformer.utils import load_model
 
 
 def run_training(model: ModelForFM = None,

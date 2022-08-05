@@ -1,7 +1,5 @@
 from pathlib import Path
 from typing import Union
-
-import torch
 from torch.utils.data import random_split, RandomSampler, DataLoader
 
 
