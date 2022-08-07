@@ -21,6 +21,7 @@ def convert_to_tensor_dataset(dataset: list,
                               mask_proba: float = 0.2,
                               prediction_len: int = 5,
                               perform_masking: bool = True,
+                              min_seq_len_coeff: float = 0.3,
                               seed: int = None
                               ) -> TensorDataset:
     if seed is not None:
@@ -36,7 +37,7 @@ def convert_to_tensor_dataset(dataset: list,
         seq_len = len(input_ids)
         pad_len = max_seq_len - seq_len
 
-        if seq_len < prediction_len + 0.3 * seq_len:
+        if seq_len < prediction_len + min_seq_len_coeff * seq_len:
             continue
 
         attention_mask = [1] * max_seq_len

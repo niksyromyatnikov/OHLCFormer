@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from transformers.models.bert.modeling_bert import BertAttention, BertOutput, BertIntermediate
 
-from ..embeddings import IntervalEncoding, PositionalEncoding, IntervalEncodingTrainable
+from ohlcformer.embeddings import IntervalEncoding, PositionalEncoding, IntervalEncodingTrainable
 
 positional_encoders = {'interval': IntervalEncoding, 'positional': PositionalEncoding,
                        'interval-trainable': IntervalEncodingTrainable}

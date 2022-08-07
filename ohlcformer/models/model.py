@@ -4,8 +4,8 @@ from dotmap import DotMap
 from collections import defaultdict
 from copy import deepcopy
 from torch.utils.data import DataLoader
-from ..data import DataProcessor, mask_tokens
-from ..losses import LossBuilder, MaskedDirectionLoss, default_loss
+from ohlcformer.data import DataProcessor, mask_tokens
+from ohlcformer.losses import LossBuilder, MaskedDirectionLoss, default_loss
 from . import Model
 
 
