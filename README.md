@@ -31,9 +31,9 @@ You can find here a list of the official notebooks.
     <td></td>
   </tr>
   <tr>
-    <td><a href="https://github.com/niksyromyatnikov/OHLCFormer/blob/master/examples/notebooks/data-processing.ipynb">Data processing</a></td>
+    <td><a href="https://github.com/niksyromyatnikov/OHLCFormer/blob/master/examples/notebooks/data_processing.ipynb">Data processing</a></td>
     <td>How to preprocess your data and build a dataset.</td>
-    <td><a href="https://colab.research.google.com/github/niksyromyatnikov/OHLCFormer/blob/master/examples/notebooks/data-processing.ipynb"><img alt="Open in Colab" src="https://colab.research.google.com/assets/colab-badge.svg"></a></td>
+    <td><a href="https://colab.research.google.com/github/niksyromyatnikov/OHLCFormer/blob/master/examples/notebooks/data_processing.ipynb"><img alt="Open in Colab" src="https://colab.research.google.com/assets/colab-badge.svg"></a></td>
   </tr>
   <tr>
     <td><a href="https://github.com/niksyromyatnikov/OHLCFormer/blob/master/examples/notebooks/train_model.ipynb">Model training</a></td>
