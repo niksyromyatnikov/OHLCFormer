@@ -4,5 +4,6 @@
 
 from ohlcformer.logging import (
     get_logger,
-    set_logging_level
+    set_logging_level,
+    set_logging_formatting
 )
