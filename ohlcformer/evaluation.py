@@ -1,11 +1,13 @@
 from pathlib import Path
 from typing import Union
-
 from dotmap import DotMap
 from heapq import nsmallest, nlargest
+from ohlcformer import logging
 from ohlcformer.utils import load_model
 from ohlcformer.losses import get_metric_direction
 from ohlcformer.models import ModelForFM
+
+logger = logging.get_logger(__name__)
 
 
 def run_tests(tests: dict,
@@ -14,6 +16,8 @@ def run_tests(tests: dict,
               configs_path: Union[str, Path] = None,
               model_dir: Union[str, Path] = None
               ) -> dict:
+    logger.info(f'Running model evaluation on {len(tests)} tests.')
+
     model = model if model is not None else load_model(configs, configs_path, model_dir)
 
     if model is None:
@@ -37,8 +41,8 @@ def run_tests(tests: dict,
                 try:
                     model.set_config(config_name, config_val)
                 except TypeError as e:
-                    print(f'Failed to set config {config_name} to {config_val}')
-                    print(e)
+                    logger.error(f'Failed to set config {config_name} to {config_val}', exc_info=True)
+                    logger.error(e, exc_info=True)
 
         model.load_dataset({'test_dataset': test_configs['dataset_path']})
         result[name] = trainer.test(model, verbose=False)
@@ -67,11 +71,15 @@ def compare_models(tests: dict, models: dict, top_k=0) -> (dict, dict):
         raise ValueError('Expected at least one test and one model!')
 
     top_k = len(models) if top_k <= 0 else top_k
+
+    logger.info(f'Running {len(tests)} tests on {len(models)} models outputting top-{top_k} results for each test.')
+
     results = {name: {} for name in tests.keys()}
     top = {name: {} for name in tests.keys()}
 
     for model_name, model in models.items():
         tests_result = run_tests(tests, **model)
+        logger.debug(f'{model_name} evaluation results: {tests_result}.')
 
         for test_name, test_result in tests_result.items():
             if not test_result:
