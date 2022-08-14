@@ -1,4 +1,7 @@
 from dotmap import DotMap
+from ohlcformer import logging
+
+logger = logging.get_logger(__name__)
 
 models_implementations_dict = {}
 
@@ -19,7 +22,7 @@ def register_model(name: str = None) -> type:
         if not model_name:
             model_name = cls.__module__ + '.' + cls.__name__
         if model_name in models_implementations_dict:
-            print("Model class {} is already registered and will be overwritten!".format(model_name))
+            logger.warning(f'Model class {model_name} is already registered and will be overwritten!')
 
         models_implementations_dict[model_name] = cls
 
@@ -50,6 +53,8 @@ class ModelBuilder(object):
         try:
             return cls.models_dict[configs.model_type](configs)
         except KeyError:
+            logger.error(f'No implementation found for the specified model type {configs.model_type}.')
             raise "{} architecture not implemented!".format(configs.model_type)
         except TypeError:
+            logger.error(f'Incorrect model type {type(configs.model_type)}.')
             raise TypeError("Model type is not specified!")
