@@ -1,6 +1,10 @@
+import torch
 from pathlib import Path
 from typing import Union
 from torch.utils.data import random_split, RandomSampler, DataLoader
+from ohlcformer import logging
+
+logger = logging.get_logger(__name__)
 
 
 class DataProcessor:
@@ -12,13 +16,17 @@ class DataProcessor:
         dataset, val_dataset, test_dataset = None, None, None
 
         if isinstance(dataset_path, str) or isinstance(dataset_path, Path):
+            logger.info(f'Loading dataset from {dataset_path}')
             dataset = torch.load(dataset_path)
         elif isinstance(dataset_path, dict):
             if dataset_path.get('train_dataset', None) is not None:
+                logger.info(f'Loading train dataset from {dataset_path["train_dataset"]}')
                 dataset = torch.load(dataset_path['train_dataset'])
             if dataset_path.get('val_dataset', None) is not None:
+                logger.info(f'Loading validation dataset from {dataset_path["val_dataset"]}')
                 val_dataset = torch.load(dataset_path['val_dataset'])
             if dataset_path.get('test_dataset', None) is not None:
+                logger.info(f'Loading test dataset from {dataset_path["test_dataset"]}')
                 test_dataset = torch.load(dataset_path['test_dataset'])
 
         return dataset, val_dataset, test_dataset
@@ -27,6 +35,8 @@ class DataProcessor:
                         test_set_split_prop: float = 0.0, batch_size: int = 32):
         train_dataloader, val_dataloader, test_dataloader = None, None, None
         train_subset, val_subset, test_subset = None, None, None
+
+        logger.info(f'Preparing dataset from {dataset_path}.')
 
         dataset, val_dataset, test_dataset = self.load_dataset(dataset_path)
 
@@ -39,6 +49,11 @@ class DataProcessor:
             nb_train_samples += dl - nb_train_samples - nb_val_samples - nb_test_samples if nb_train_samples > 0 else 0
             nb_val_samples += dl - nb_train_samples - nb_val_samples - nb_test_samples if nb_val_samples > 0 else 0
             nb_test_samples += dl - nb_train_samples - nb_val_samples - nb_test_samples if nb_test_samples > 0 else 0
+
+            logger.debug('Samples distribution:')
+            logger.debug(f'{nb_train_samples} training samples.')
+            logger.debug(f'{nb_val_samples} validation samples.')
+            logger.debug(f'{nb_test_samples} test samples.')
 
             train_subset, val_subset, test_subset = random_split(dataset,
                                                                  [nb_train_samples, nb_val_samples, nb_test_samples])

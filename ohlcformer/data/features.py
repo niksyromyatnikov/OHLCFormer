@@ -1,6 +1,9 @@
 import random
 import torch
 from torch.utils.data import TensorDataset
+from ohlcformer import logging
+
+logger = logging.get_logger(__name__)
 
 
 class InputFeatures:
@@ -24,7 +27,10 @@ def convert_to_tensor_dataset(dataset: list,
                               min_seq_len_coeff: float = 0.3,
                               seed: int = None
                               ) -> TensorDataset:
+    logger.info(f'Converting dataset with {len(dataset)} rows to tensors {"with masking" if perform_masking else ""}.')
+
     if seed is not None:
+        logger.debug(f'Setting custom seed={seed}.')
         rand = random.Random(seed)
     else:
         rand = random
