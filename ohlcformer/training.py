@@ -18,7 +18,7 @@ def run_training(model: ModelForFM = None,
                  ) -> dict:
     eval_result = {}
 
-    logger.info(f'Running model training.')
+    logger.info('Running model training.')
 
     for name, dataset in datasets.items():
         train_configs = {}

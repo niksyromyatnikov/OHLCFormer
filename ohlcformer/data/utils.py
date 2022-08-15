@@ -81,7 +81,7 @@ def split_time_series(stocks, lens=None, seed: int = None) -> list:
 
 
 def convert_series_to_relative(dataset) -> list:
-    logger.info(f'Converting absolute time steps values to relative.')
+    logger.info('Converting absolute time steps values to relative.')
 
     relative_dataset = []
 
