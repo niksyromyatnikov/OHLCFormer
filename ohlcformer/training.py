@@ -1,9 +1,11 @@
 from pathlib import Path
 from typing import Union
-
 from dotmap import DotMap
+from ohlcformer import logging
 from ohlcformer.models import ModelForFM
 from ohlcformer.utils import load_model
+
+logger = logging.get_logger(__name__)
 
 
 def run_training(model: ModelForFM = None,
@@ -15,6 +17,8 @@ def run_training(model: ModelForFM = None,
                  verbose: bool = True,
                  ) -> dict:
     eval_result = {}
+
+    logger.info('Running model training.')
 
     for name, dataset in datasets.items():
         train_configs = {}
@@ -35,8 +39,8 @@ def run_training(model: ModelForFM = None,
                 try:
                     model.set_config(config_name, config_val)
                 except TypeError as e:
-                    print(f'Failed to set config {config_name} to {config_val}')
-                    print(e)
+                    logger.error(f'Failed to set config {config_name} to {config_val}', exc_info=True)
+                    logger.error(e, exc_info=True)
 
         model.load_dataset()
 
@@ -53,7 +57,9 @@ def run_training(model: ModelForFM = None,
         trainer.fit(model)
 
         if evaluate:
+            logger.info(f'Running model evaluation on {name} dataset.')
             eval_result[name] = trainer.test(model, verbose=verbose)
+            logger.debug(f'{name} evaluation result: {eval_result[name]}')
 
         model = None
 

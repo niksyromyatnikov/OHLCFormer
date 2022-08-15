@@ -1,5 +1,8 @@
 import copy
 from dotmap import DotMap
+from ohlcformer import logging
+
+logger = logging.get_logger(__name__)
 
 losses_implementations_dict = {}
 
@@ -20,7 +23,7 @@ def register_loss(name: str = None) -> type:
         if not loss_name:
             loss_name = cls.__module__ + '.' + cls.__name__
         if loss_name in losses_implementations_dict:
-            print("Loss class {} is already registered and will be overwritten!".format(loss_name))
+            logger.warning(f"Loss class {loss_name} is already registered and will be overwritten!")
 
         losses_implementations_dict[loss_name] = cls
 
@@ -53,6 +56,8 @@ class LossBuilder(object):
         try:
             return cls.losses_dict[loss_type](**conf)
         except KeyError:
+            logger.error(f'No implementation found for the specified loss type {loss_type}.')
             raise "{} loss not implemented!".format(loss_type)
         except TypeError:
+            logger.error(f'Incorrect loss type {type(loss_type)}.')
             raise TypeError("Loss type is not specified!")

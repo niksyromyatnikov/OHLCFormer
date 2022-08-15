@@ -3,9 +3,14 @@ import os
 import random
 from pathlib import Path
 from datetime import datetime
+from ohlcformer import logging
+
+logger = logging.get_logger(__name__)
 
 
-def read_stocks_dir(path: Path, verbose=False):
+def read_stocks_dir(path: Path):
+    logger.info(f'Reading stocks from {path}.')
+
     stocks = []
 
     for stock in os.listdir(path):
@@ -17,13 +22,14 @@ def read_stocks_dir(path: Path, verbose=False):
 
         stocks.append(stock_data)
 
-        if verbose:
-            print(f'{stock} : {len(stock_data)}')
+        logger.debug(f'{stock} : {len(stock_data)}')
 
     return stocks
 
 
-def convert_stock_data(stocks_path: Path, preprocessed_stocks_path: Path, verbose=False):
+def convert_stock_data(stocks_path: Path, preprocessed_stocks_path: Path):
+    logger.info(f'Converting stocks from {stocks_path} to {preprocessed_stocks_path}.')
+
     for stock in os.listdir(stocks_path):
         stock = str(stock)
         stock_dir = stocks_path / stock
@@ -40,13 +46,13 @@ def convert_stock_data(stocks_path: Path, preprocessed_stocks_path: Path, verbos
                 row['date'] = datetime.strptime(row['date'], '%Y-%m-%dT%H:%M:%S.%fZ').timestamp()
                 stock_data.append(row)
 
-        if verbose:
-            print(f'{stock} : {len(stock_data)}')
+            logger.debug(f'{stock} : {len(stock_data)}')
 
         output_file = (preprocessed_stocks_path / stock).with_suffix('.json')
         output_file.parent.mkdir(exist_ok=True, parents=True)
 
         with open(output_file, 'w', encoding='utf8') as outfile:
+            logger.debug(f'Writing {stock} to {output_file}.')
             json.dump(stock_data, outfile, ensure_ascii=False)
 
 
@@ -55,7 +61,10 @@ def split_time_series(stocks, lens=None, seed: int = None) -> list:
     if lens is None:
         lens = [60, 100, 120, 240, 480, 960, 1000, 1440, 1920, 2000]
 
+    logger.info(f'Splitting time series in segments of lengths {lens}.')
+
     if seed is not None:
+        logger.debug(f'Setting custom seed={seed}.')
         rand = random.Random(seed)
     else:
         rand = random
@@ -72,6 +81,8 @@ def split_time_series(stocks, lens=None, seed: int = None) -> list:
 
 
 def convert_series_to_relative(dataset) -> list:
+    logger.info('Converting absolute time steps values to relative.')
+
     relative_dataset = []
 
     for row in dataset:
