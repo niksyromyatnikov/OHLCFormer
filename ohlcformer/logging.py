@@ -25,6 +25,8 @@ def set_logging_level(log_level: Optional[str] = None):
 
     if log_level and log_level in logging_levels:
         _default_logging_level = logging_levels[log_level]
+        _reset_lib_root_logger()
+        _configure_lib_root_logger()
     else:
         logging.getLogger().warning(
             f"Unknown logging level = {log_level}, expected one of: {', '.join(logging_levels.keys())}."
@@ -37,10 +39,15 @@ def set_logging_formatting(log_formatting: Optional[str] = None):
     log_formatting = os.getenv("OHLCFORMER_LOG_FORMATTING", None) if log_formatting is None else log_formatting
 
     try:
-        if log_formatting:
+        if isinstance(log_formatting, str):
             _default_logging_formatter = logging.Formatter(log_formatting)
+            _reset_lib_root_logger()
+            _configure_lib_root_logger()
+        elif log_formatting is not None:
+            raise TypeError("Incorrect log formatting type {} - expected string.".format(type(log_formatting)))
     except (ValueError, TypeError) as e:
         logging.getLogger().error(e, exc_info=True)
+        raise e
 
 
 def _get_lib_name() -> str:
@@ -64,9 +71,34 @@ def _configure_lib_root_logger() -> None:
         library_root_logger.propagate = False
 
 
+def _reset_lib_root_logger() -> None:
+
+    global _default_handler
+
+    with _lock:
+        if not _default_handler:
+            return
+
+        library_root_logger = logging.getLogger(_get_lib_name())
+        library_root_logger.removeHandler(_default_handler)
+        library_root_logger.setLevel(logging.NOTSET)
+        _default_handler = None
+
+
+def get_default_logging_level() -> int:
+    return _default_logging_level
+
+
+def get_default_logging_formatter() -> logging.Formatter:
+    return _default_logging_formatter
+
+
 def get_logger(name: Optional[str] = None) -> logging.Logger:
     if name is None:
         name = _get_lib_name()
+
+    if not isinstance(name, str):
+        raise TypeError("Incorrect logger name type {} - expected string.".format(type(name)))
 
     _configure_lib_root_logger()
 
