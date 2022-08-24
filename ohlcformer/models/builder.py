@@ -52,9 +52,12 @@ class ModelBuilder(object):
         """
         try:
             return cls.models_dict[configs.model_type](configs)
+        except AttributeError as e:
+            logger.error(e, exc_info=True)
+            raise AttributeError(f'Unsupported configuration object type {type(configs)}.')
         except KeyError:
             logger.error(f'No implementation found for the specified model type {configs.model_type}.')
-            raise "{} architecture not implemented!".format(configs.model_type)
+            raise KeyError("{} architecture not implemented!".format(configs.model_type))
         except TypeError:
             logger.error(f'Incorrect model type {type(configs.model_type)}.')
             raise TypeError("Model type is not specified!")
