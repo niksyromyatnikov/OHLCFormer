@@ -11,7 +11,10 @@ from ohlcformer.models.builder import ModelBuilder
 logger = logging.get_logger(__name__)
 
 
-def load_model(configs: DotMap = None, configs_path: str = None, model_dir: str = None) -> Model:
+def load_model(configs: DotMap = None,
+               configs_path: Union[str, Path] = None,
+               model_dir: Union[str, Path] = None
+               ) -> Model:
     logger.info('Loading model.')
 
     configs = load_model_configs(configs_path) if configs is None and configs_path is not None else configs
@@ -27,6 +30,9 @@ def load_model(configs: DotMap = None, configs_path: str = None, model_dir: str 
 
 
 def save_model_configs(configs, model_dir: Union[str, Path]):
+    if configs is None:
+        raise TypeError('Expected configs object but got None instead')
+
     if not isinstance(model_dir, Path):
         model_dir = Path(model_dir)
 
@@ -49,7 +55,7 @@ def load_model_configs(path: Union[str, Path]):
         if path.is_dir() and 'configs.json' in os.listdir(path):
             logger.warning(f'Model configs directory specified instead of file. Looking for the default configs file '
                            f'{default_configs_file}.')
-            path /= 'configs.json'
+            path /= default_configs_file
         if not path.is_file():
             raise FileNotFoundError(f'Model configs file {path.as_posix()} not found.')
 
