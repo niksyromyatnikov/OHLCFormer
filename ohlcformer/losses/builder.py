@@ -57,7 +57,7 @@ class LossBuilder(object):
             return cls.losses_dict[loss_type](**conf)
         except KeyError:
             logger.error(f'No implementation found for the specified loss type {loss_type}.')
-            raise "{} loss not implemented!".format(loss_type)
+            raise KeyError("{} loss not implemented!".format(loss_type))
         except TypeError:
             logger.error(f'Incorrect loss type {type(loss_type)}.')
             raise TypeError("Loss type is not specified!")
