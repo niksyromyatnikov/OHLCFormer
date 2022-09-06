@@ -8,7 +8,7 @@ from .loss import Loss
 class MaskedDirectionLoss(Loss):
     def __init__(self, weighted=False, reduction='sum', name=None):
         super(MaskedDirectionLoss, self).__init__(weighted, reduction, name)
-        self.criterion = torch.nn.BCELoss()
+        self.criterion = torch.nn.BCELoss(reduction=reduction)
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor, mask, ignored_index=0, reduction=None,
                 return_f1=False):
@@ -18,7 +18,7 @@ class MaskedDirectionLoss(Loss):
         prediction_flat = None
         target_flat = None
 
-        lens = torch.count_nonzero(mask, axis=1)
+        lens = torch.count_nonzero(mask != ignored_index, axis=1)
 
         for i in range(0, target.shape[0]):
             if prediction_flat is None:

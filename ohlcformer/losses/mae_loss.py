@@ -12,7 +12,7 @@ class MaskedMAELoss(Loss):
         reduction = reduction if reduction else self.reduction
 
         out = None
-        lens = torch.count_nonzero(mask, axis=1)
+        lens = torch.count_nonzero(mask != ignored_index, axis=1)
 
         for i in range(0, target.shape[0]):
             diff = torch.abs(prediction[i][mask[i].ravel() != ignored_index] - target[i][:lens[i]])

@@ -90,6 +90,8 @@ class TestConfigurationUtils(TestCase):
         model = load_model(model_dir=configs_path.as_posix())
         self.assertEqual(model.__class__.__name__, configs['model_type'])
 
+        self.remove_file(configs_path)
+
     def test_save_model_configs(self):
         configs = self.generate_model_config()
         configs_folder = Path().absolute() / str(time.time())
@@ -109,7 +111,7 @@ class TestConfigurationUtils(TestCase):
 
         self.assertRaises(FileNotFoundError, save_model_configs, configs, configs_folder / 'test')
 
-        self.remove_file(configs_folder)
+        self.remove_file(configs_folder / 'configs.json')
 
     def test_load_model_configs(self):
         configs = self.generate_model_config()
@@ -177,7 +179,7 @@ class TestConfigurationUtils(TestCase):
 
         self.assertRaises(TypeError, load_from_dir, None)
 
-        checkpoint_path, checkpoint = self.create_checkpoint_file(model_folder=configs_path.parts[-2])
+        checkpoint_path, _ = self.create_checkpoint_file(model_folder=configs_path.parts[-2])
         model = load_from_dir(configs_path.parent.as_posix())
         self.assertEqual(model.__class__.__name__, configs['model_type'])
 
